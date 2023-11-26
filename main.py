@@ -1,121 +1,103 @@
-# Инициализация карты
-maps = [1, 2, 3,
-        4, 5, 6,
-        7, 8, 9]
+from tkinter import *
+import random
+from tkinter import messagebox
+root = Tk()
+root.title('Крестики - нолики ')
+root.geometry("372x395+450+100")
+root.resizable(width=False, height=False)
+game_run = True
+field = []
+cross_count = 0
+def new_game():
+    for row in range(3):
+        for col in range(3):
+            field[row][col]['text'] = ' '
+            field[row][col]['background'] = 'light blue'
+    global game_run
+    game_run = True
+    global cross_count
+    cross_count = 0
+def check_win(smb):
+    for n in range(3):
+        check_line(field[n][0], field[n][1], field[n][2], smb)
+        check_line(field[0][n], field[1][n], field[2][n], smb)
+    check_line(field[0][0], field[1][1], field[2][2], smb)
+    check_line(field[2][0], field[1][1], field[0][2], smb)
+def check_draw(field):
+    for row in range (3):
+        for col  in range(3):
+            if field[row][col]['text'] == ' ':
+                return False
+    messagebox.showinfo("Ничья", ("Игра закончилась ничьей!"))
 
-# Инициализация победных линий
-victories = [[0, 1, 2],
-             [3, 4, 5],
-             [6, 7, 8],
-             [0, 3, 6],
-             [1, 4, 7],
-             [2, 5, 8],
-             [0, 4, 8],
-             [2, 4, 6]]
+def check_line(a1,a2,a3,smb):
+    if a1['text'] == smb and a2['text'] == smb and a3['text'] == smb:
+        a1['background'] = a2['background'] = a3['background'] = 'light green'
+        messagebox.showinfo("Победа",(f"Игрок {smb} Победил!"))
+        global game_run
+        game_run = False
+
+def click(row, col):
+    if game_run and field[row][col]['text'] == ' ':
+        field[row][col]['text'] = 'X'
+        global cross_count
+        cross_count += 1
+        check_win('X')
+        check_draw(field)
+        if game_run and cross_count < 5:
+            computer_move()
+            check_win('O')
+            check_draw(field)
+def can_win(a1,a2,a3,smb):
+    res = False
+    if a1['text'] == smb and a2['text'] == smb and a3['text'] == ' ':
+        a3['text'] = 'O'
+        res = True
+    if a1['text'] == smb and a2['text'] == ' ' and a3['text'] == smb:
+        a2['text'] = 'O'
+        res = True
+    if a1['text'] == ' ' and a2['text'] == smb and a3['text'] == smb:
+        a1['text'] = 'O'
+        res = True
+    return res
+
+def computer_move():
+    for n in range(3):
+        if can_win(field[n][0], field[n][1], field[n][2], 'O'):
+            return
+        if can_win(field[0][n], field[1][n], field[2][n], 'O'):
+            return
+    if can_win(field[0][0], field[1][1], field[2][2], 'O'):
+        return
+    if can_win(field[2][0], field[1][1], field[0][2], 'O'):
+        return
+    for n in range(3):
+        if can_win(field[n][0], field[n][1], field[n][2], 'X'):
+            return
+        if can_win(field[0][n], field[1][n], field[2][n], 'X'):
+            return
+    if can_win(field[0][0], field[1][1], field[2][2], 'X'):
+        return
+    if can_win(field[2][0], field[1][1], field[0][2], 'X'):
+        return
+    while True:
+        row = random.randint(0, 2)
+        col = random.randint(0, 2)
+        if field[row][col]['text'] == ' ':
+            field[row][col]['text'] = 'O'
+            break
 
 
-# Вывод карты на экран
-# Сделать ход в ячейку
-def step_maps(step, symbol):
-    ind = maps.index(step)
-    maps[ind] = symbol
-
-
-# Получить текущий результат игры
-def get_result():
-    win = ""
-
-    for i in victories:
-        if maps[i[0]] == "X" and maps[i[1]] == "X" and maps[i[2]] == "X":
-            win = "X"
-        if maps[i[0]] == "O" and maps[i[1]] == "O" and maps[i[2]] == "O":
-            win = "O"
-
-    return win
-
-
-# Искусственный интеллект: поиск линии с нужным количеством X и O на победных линиях
-def check_line(sum_O, sum_X):
-    step = ""
-    for line in victories:
-        o = 0
-        x = 0
-
-        for j in range(0, 3):
-            if maps[line[j]] == "O":
-                o = o + 1
-            if maps[line[j]] == "X":
-                x = x + 1
-
-        if o == sum_O and x == sum_X:
-            for j in range(0, 3):
-                if maps[line[j]] != "O" and maps[line[j]] != "X":
-                    step = maps[line[j]]
-
-    return step
-
-
-# Искусственный интеллект: выбор хода
-def AI():
-    step = ""
-
-    # 1) если на какой либо из победных линий 2 свои фигуры и 0 чужих - ставим
-    step = check_line(2, 0)
-
-    # 2) если на какой либо из победных линий 2 чужие фигуры и 0 своих - ставим
-    if step == "":
-        step = check_line(0, 2)
-
-        # 3) если 1 фигура своя и 0 чужих - ставим
-    if step == "":
-        step = check_line(1, 0)
-
-        # 4) центр пуст, то занимаем центр
-    if step == "":
-        if maps[4] != "X" and maps[4] != "O":
-            step = 5
-
-            # 5) если центр занят, то занимаем первую ячейку
-    if step == "":
-        if maps[0] != "X" and maps[0] != "O":
-            step = 1
-
-    return step
-
-
-# Основная программа
-game_over = False
-human = True
-
-while game_over == False:
-
-    # 1. Показываем карту
-    print_maps()
-
-    # 2. Спросим у играющего куда делать ход
-    if human == True:
-        symbol = "X"
-        step = int(input("Человек, ваш ход: "))
-    else:
-        print("Компьютер делает ход: ")
-        symbol = "O"
-        step = AI()
-
-    # 3. Если компьютер нашел куда сделать ход, то играем. Если нет, то ничья.
-    if step != "":
-        step_maps(step, symbol)  # делаем ход в указанную ячейку
-        win = get_result()  # определим победителя
-        if win != "":
-            game_over = True
-        else:
-            game_over = False
-    else:
-        print("Ничья!")
-        game_over = True
-        win = "дружба"
-
-    human = not (human)
-
-# Игра окончена. Покажем карту. Объявим победителя.
-print_maps()
-print("Победил", win)
+for row in range(3):
+    line = []
+    for col in range(3):
+        button = Button(root, text=' ', width=6, height=3,
+                        font=('Verdana', 20, 'bold'),
+                        background='light blue',
+                        command=lambda row=row, col=col: click(row,col))
+        button.grid(row=row, column=col, sticky='nsew')
+        line.append(button)
+    field.append(line)
+new_button = Button(root, text='Новая игра', command=new_game,background='light green',font=('Verdana', 10, 'bold'),)
+new_button.grid(row=3, column=0, columnspan=3, sticky='s')
+root.mainloop()
